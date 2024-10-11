@@ -23,7 +23,7 @@ def main():
             case "STATUS_AWAITING_OUTPUT":
                 output_data.append(icm.output())
                 print(f"read {output_data[-1]} from icm")
-        icm.execute()
+        # icm.execute()
     
 
     # output = icm.read()

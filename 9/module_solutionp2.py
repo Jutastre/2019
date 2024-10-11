@@ -13,10 +13,10 @@ def main():
     icm.feed(data)
     icm.execute()
     icm.input(2)
-    icm.execute()
+    # icm.execute()
     while icm.status()[0] == 4:
-        print(f"{icm.output()}, ", end="")
-        icm.execute()
+        print(icm.output())
+        # icm.execute()
         
     # output = icm.output()
 

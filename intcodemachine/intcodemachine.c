@@ -70,6 +70,7 @@ PyObject* select_machine(PyObject* self, PyObject* args) {
     char error_msg_buffer[256];
     int target;
     PyArg_ParseTuple(args, "i", &target);
+    if (machine->debug_level >= 2) printf("Selecting machine #%i\n", target);
     if ((target < 0) || (target > NUMBER_OF_MACHINES)) {
         sprintf(error_msg_buffer, "Invalid machine selection (tried selecting %i; not in range 0 to %i inclusive)", target, NUMBER_OF_MACHINES - 1);
         PyErr_SetString(PyExc_ValueError, error_msg_buffer);
@@ -84,7 +85,7 @@ PyObject* select_machine(PyObject* self, PyObject* args) {
     Py_RETURN_NONE;
 }
 
-bool _execute_tape() {
+bool _execute() {
     long long left_operand;
     long long right_operand;
     long long target;
@@ -100,11 +101,11 @@ bool _execute_tape() {
         if (machine->debug_level >= 2) printf("Decoding instruction: %lli\n", tape[machine->program_counter]);
         if (machine->debug_level >= 1) printf("Executing opcode: %lli @ %lu\n", opcode, machine->program_counter);
         if (machine->debug_level >= 2) printf("Using mode: %i\n", modes);
-        // if (machine->program_counter >= machine->tapesize) {
-        //     sprintf(error_msg_buffer, "Tried to execute out of bounds opcode @%lu; tape is only %lu", machine->program_counter, machine->tapesize);
-        //     PyErr_SetString(PyErr_Occurred(), "Program reached OOB");
-        //     return true;
-        // }
+        if (machine->program_counter >= machine->tapesize) {
+            sprintf(error_msg_buffer, "Tried to execute out of bounds opcode @%lu; tape is only %lu", machine->program_counter, machine->tapesize);
+            PyErr_SetString(PyExc_ValueError, "Program reached OOB");
+            return true;
+        }
         switch (opcode) {
             case 1:
                 left_operand = tape[machine->program_counter + 1];
@@ -318,7 +319,7 @@ bool _execute_tape() {
 
             default:
                 sprintf(error_msg_buffer, "Unknown opcode: %lli @ %lu", tape[machine->program_counter], machine->program_counter);
-                PyErr_SetString(PyErr_Occurred(), "Unknown opcode");
+                PyErr_SetString(PyExc_ValueError, "Unknown opcode");
                 return true;
         }
     }
@@ -362,15 +363,34 @@ PyObject* set_debug(PyObject* self, PyObject* arg) {
     printf("Debug level of machine #%lu set to %lu\n", machine_selector, machine->debug_level);
     Py_RETURN_NONE;
 }
+PyObject* set_debug_global(PyObject* self, PyObject* arg) {
+    int value;
+    if (!PyArg_Parse(arg, "i", &value)) {
+        return NULL;
+    }
+    for (size_t idx = 0; idx < NUMBER_OF_MACHINES; idx++) {
+        machines[idx].debug_level = value;
+    }
+    printf("Debug level of all machines set to %lu\n", machine->debug_level);
+    Py_RETURN_NONE;
+}
 
-PyObject* execute_tape(PyObject* self, PyObject* args) {
+PyObject* reset_machine(PyObject* self, PyObject* args) {
+    if (machine->debug_level >= 2) printf("Resetting machine\n");
+    machine->program_counter = 0;
+    machine->relative_base = 0;
+    machine->status = STATUS_READY;
+    Py_RETURN_NONE;
+}
+
+PyObject* execute(PyObject* self, PyObject* args) {
     if (machine->status != STATUS_READY) {
-        PyErr_SetString(PyErr_Occurred(), "Error! Not ready");
+        PyErr_SetString(PyExc_ValueError, "Error! Not ready");
         return NULL;
     }
     if (machine->debug_level >= 2) printf("Beginning execution\n");
     if (machine->debug_level >= 3) _debug_print_tape();
-    if (_execute_tape()) {
+    if (_execute()) {
         return NULL;
     }
     if (machine->debug_level >= 3) _debug_print_tape();
@@ -389,21 +409,34 @@ PyObject* read_tape(PyObject* self, PyObject* args) {
 }
 
 PyObject* input(PyObject* self, PyObject* arg) {
+    if (machine->status != STATUS_AWAITING_INPUT) {
+        PyErr_SetString(PyExc_ValueError, "Error! Unexpected input");
+        return NULL;
+    }
     long long input_value;
     if (!PyArg_Parse(arg, "L", &input_value)) {
         return NULL;
     }
     if (machine->debug_level >= 2) printf("Inputting value %lli to address %lu\n", input_value, machine->io_location);
     tape[machine->io_location] = input_value;
-    machine->status = STATUS_READY;
+    if (_execute()) {
+        return NULL;
+    }
     Py_RETURN_NONE;
 }
 
 PyObject* output(PyObject* self, PyObject* args) {
+    if (machine->status != STATUS_AWAITING_OUTPUT) {
+        PyErr_SetString(PyExc_ValueError, "Error! Unexpected output");
+        return NULL;
+    }
     if (machine->debug_level >= 2) printf("Outputting from address %lu\n", machine->io_location);
     if (machine->debug_level >= 2) printf("Outputting value %lli from address %lu\n", tape[machine->io_location], machine->io_location);
-    machine->status = STATUS_READY;
-    return PyLong_FromLongLong(tape[machine->io_location]);
+    PyObject* output_value = PyLong_FromLongLong(tape[machine->io_location]);
+    if (_execute()) {
+        return NULL;
+    }
+    return output_value;
 }
 PyObject* get_status(PyObject* self, PyObject* args) {
     char string_buffer[256];
@@ -430,12 +463,14 @@ PyObject* get_status(PyObject* self, PyObject* args) {
 }
 
 static PyMethodDef methods[] = {
+    {"reset", reset_machine, METH_NOARGS, "Select which machine to operate"},
     {"select_machine", select_machine, METH_VARARGS, "Select which machine to operate"},
-    {"set_debug", set_debug, METH_O, "Sets debug printing on/off"},
+    {"set_debug", set_debug, METH_O, "Sets debug printing level"},
+    {"set_debug_global", set_debug_global, METH_O, "Sets debug printing on/off for all machines"},
     {"status", get_status, METH_NOARGS, "Reads the machines current status"},
-    {"feed", feed_tape, METH_O, "Feeds a tape into the machine"},
-    {"execute", execute_tape, METH_NOARGS, "Executes the tape in the machine"},
-    {"read", read_tape, METH_NOARGS, "Reads the tape currently in the machine"},
+    {"feed", feed_tape, METH_O, "Feeds a program into the machine"},
+    {"execute", execute, METH_NOARGS, "Executes the program in the machine"},
+    {"read", read_tape, METH_NOARGS, "Reads the memory of the machine"},
     {"output", output, METH_NOARGS, "Retrieves output"},
     {"input", input, METH_O, "Sends input"},
     {NULL, NULL, 0, NULL}

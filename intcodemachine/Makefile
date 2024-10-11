@@ -17,6 +17,7 @@ deploy:
     cp intcodemachine.so ./../5
     cp intcodemachine.so ./../7
     cp intcodemachine.so ./../9
+    cp intcodemachine.so ./../11
 
 install:
     pip install --editable .
