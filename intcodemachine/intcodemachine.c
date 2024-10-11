@@ -70,7 +70,7 @@ PyObject* select_machine(PyObject* self, PyObject* args) {
     char error_msg_buffer[256];
     int target;
     PyArg_ParseTuple(args, "i", &target);
-    if (machine->debug_level >= 2) printf("Selecting machine #%i\n", target);
+    if (machine->debug_level >= 1) printf("Selecting machine #%i\n", target);
     if ((target < 0) || (target > NUMBER_OF_MACHINES)) {
         sprintf(error_msg_buffer, "Invalid machine selection (tried selecting %i; not in range 0 to %i inclusive)", target, NUMBER_OF_MACHINES - 1);
         PyErr_SetString(PyExc_ValueError, error_msg_buffer);
@@ -98,9 +98,9 @@ bool _execute() {
         mode_vector[1] = (modes / 10) % 10;
         mode_vector[2] = (modes / 100) % 10;
         if (machine->debug_level >= 4) _debug_print_tape();
-        if (machine->debug_level >= 2) printf("Decoding instruction: %lli\n", tape[machine->program_counter]);
-        if (machine->debug_level >= 1) printf("Executing opcode: %lli @ %lu\n", opcode, machine->program_counter);
-        if (machine->debug_level >= 2) printf("Using mode: %i\n", modes);
+        if (machine->debug_level >= 3) printf("Decoding instruction: %lli\n", tape[machine->program_counter]);
+        if (machine->debug_level >= 2) printf("Executing opcode: %lli @ %lu\n", opcode, machine->program_counter);
+        if (machine->debug_level >= 3) printf("Using mode: %i\n", modes);
         if (machine->program_counter >= machine->tapesize) {
             sprintf(error_msg_buffer, "Tried to execute out of bounds opcode @%lu; tape is only %lu", machine->program_counter, machine->tapesize);
             PyErr_SetString(PyExc_ValueError, "Program reached OOB");
@@ -129,7 +129,7 @@ bool _execute() {
                 }
 
                 tape[target] = left_operand + right_operand;
-                if (machine->debug_level >= 2) printf("%lli + %lli = %lli\n", left_operand, right_operand, tape[target]);
+                if (machine->debug_level >= 3) printf("%lli + %lli = %lli\n", left_operand, right_operand, tape[target]);
 
                 machine->program_counter += 4;
                 break;
@@ -156,7 +156,7 @@ bool _execute() {
                 }
 
                 tape[target] = left_operand * right_operand;
-                if (machine->debug_level >= 2) printf("%lli * %lli = %lli\n", left_operand, right_operand, tape[target]);
+                if (machine->debug_level >= 3) printf("%lli * %lli = %lli\n", left_operand, right_operand, tape[target]);
 
                 machine->program_counter += 4;
                 break;
@@ -309,7 +309,7 @@ bool _execute() {
                 }
 
                 machine->relative_base += left_operand;
-                if (machine->debug_level >= 2) printf("relative_base set to %lu\n", machine->relative_base);
+                if (machine->debug_level >= 3) printf("relative_base set to %lu\n", machine->relative_base);
                 machine->program_counter += 2;
                 break;
 
@@ -348,7 +348,7 @@ PyObject* feed_tape(PyObject* self, PyObject* arg) {
     machine->relative_base = 0;
     machine->status = STATUS_READY;
 
-    if (machine->debug_level >= 2) printf("Finished feeding tape\n");
+    if (machine->debug_level >= 1) printf("Finished feeding tape\n");
     if (machine->debug_level >= 2) printf("Memory size now %lu\n", machine->tapesize);
 
     Py_RETURN_NONE;
@@ -376,7 +376,7 @@ PyObject* set_debug_global(PyObject* self, PyObject* arg) {
 }
 
 PyObject* reset_machine(PyObject* self, PyObject* args) {
-    if (machine->debug_level >= 2) printf("Resetting machine\n");
+    if (machine->debug_level >= 1) printf("Resetting machine\n");
     machine->program_counter = 0;
     machine->relative_base = 0;
     machine->status = STATUS_READY;
@@ -388,12 +388,12 @@ PyObject* execute(PyObject* self, PyObject* args) {
         PyErr_SetString(PyExc_ValueError, "Error! Not ready");
         return NULL;
     }
-    if (machine->debug_level >= 2) printf("Beginning execution\n");
-    if (machine->debug_level >= 3) _debug_print_tape();
+    if (machine->debug_level >= 1) printf("Beginning execution\n");
+    if (machine->debug_level >= 4) _debug_print_tape();
     if (_execute()) {
         return NULL;
     }
-    if (machine->debug_level >= 3) _debug_print_tape();
+    if (machine->debug_level >= 4) _debug_print_tape();
     if (machine->debug_level >= 2) printf("Finished execution\n");
     Py_RETURN_NONE;
 }
@@ -417,11 +417,13 @@ PyObject* input(PyObject* self, PyObject* arg) {
     if (!PyArg_Parse(arg, "L", &input_value)) {
         return NULL;
     }
-    if (machine->debug_level >= 2) printf("Inputting value %lli to address %lu\n", input_value, machine->io_location);
+    if (machine->debug_level >= 1) printf("Inputting value %lli to address %lu\n", input_value, machine->io_location);
     tape[machine->io_location] = input_value;
+    if (machine->debug_level >= 2) printf("Resuming execution\n");
     if (_execute()) {
         return NULL;
     }
+    if (machine->debug_level >= 2) printf("Finished execution\n");
     Py_RETURN_NONE;
 }
 
@@ -430,12 +432,14 @@ PyObject* output(PyObject* self, PyObject* args) {
         PyErr_SetString(PyExc_ValueError, "Error! Unexpected output");
         return NULL;
     }
-    if (machine->debug_level >= 2) printf("Outputting from address %lu\n", machine->io_location);
-    if (machine->debug_level >= 2) printf("Outputting value %lli from address %lu\n", tape[machine->io_location], machine->io_location);
+    // if (machine->debug_level >= 1) printf("Outputting from address %lu\n", machine->io_location);
+    if (machine->debug_level >= 1) printf("Outputting value %lli from address %lu\n", tape[machine->io_location], machine->io_location);
     PyObject* output_value = PyLong_FromLongLong(tape[machine->io_location]);
+    if (machine->debug_level >= 2) printf("Resuming execution\n");
     if (_execute()) {
         return NULL;
     }
+    if (machine->debug_level >= 2) printf("Finished execution\n");
     return output_value;
 }
 PyObject* get_status(PyObject* self, PyObject* args) {
