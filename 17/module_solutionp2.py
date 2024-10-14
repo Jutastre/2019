@@ -3,169 +3,45 @@ import math
 import intcodemachine as icm
 
 INPUT_PATH = "input.txt"
-WALL = None
-
-
-class Bfs_node:
-    def __sizeof__(self) -> int:
-        return len(self.path)
-
-    def __init__(
-        self,
-        coords: tuple[int, int],
-        path: list[str],
-        lookup: dict[tuple[int, int] : str | None] = {},
-    ) -> None:
-        self.coords = coords
-        self.lookup = lookup
-        self.path = path
-        # if (coords in lookup) and len(path) < lookup[coords]:
-        #     lookup[coords] = self
-
-        # match path[-1]:
-        #     case "n":
-        #         self.came_from = "s"
-        #     case "s":
-        #         self.came_from = "n"
-        #     case "w":
-        #         self.came_from = "e"
-        #     case "e":
-        #         self.came_from = "w"
-
-
-def search(coords, lookup, program, goal, path_to_origin = []):
-    path = lookup[coords]
-    icm.feed(program)
-    icm.execute()
-    # icm.output()
-    for direction in path_to_origin:  # travel to search origin
-        match direction:
-            case "n":
-                icm.input(1)
-            case "s":
-                icm.input(2)
-            case "w":
-                icm.input(3)
-            case "e":
-                icm.input(4)
-        icm.output()
-    for direction in path:  # travel to this node
-        match direction:
-            case "n":
-                icm.input(1)
-            case "s":
-                icm.input(2)
-            case "w":
-                icm.input(3)
-            case "e":
-                icm.input(4)
-        icm.output()
-    for direction in ["n", "s", "e", "w"]:
-        # if direction == self.came_from:
-        #     continue
-        x,y = coords
-        match direction:
-            case "n":
-                target_coords = (x, y - 1)
-            case "s":
-                target_coords = (x, y + 1)
-            case "w":
-                target_coords = (x - 1, y)
-            case "e":
-                target_coords = (x + 1, y)
-        if target_coords in lookup:
-            continue
-        match direction:
-            case "n":
-                icm.input(1)
-            case "s":
-                icm.input(2)
-            case "w":
-                icm.input(3)
-            case "e":
-                icm.input(4)
-        output = icm.output()
-        match output:
-            case 0:
-                lookup[target_coords] = WALL
-            case 1:
-                lookup[target_coords] = [*path, direction]
-                match direction:  # walk back to this position
-                    case "n":
-                        icm.input(2)
-                    case "s":
-                        icm.input(1)
-                    case "w":
-                        icm.input(4)
-                    case "e":
-                        icm.input(3)
-                icm.output()
-            case goal:
-                print(f"HIT {target_coords}; distance is {len(path) + 1}")
-                return [*path, direction]
-    return False
-
 
 def main():
-    with open(INPUT_PATH) as f:
-        data = [int(n) for n in f.read().strip().split(",")]
-    icm.feed(data)
-    icm.execute()
-    # screen = [[" " for _ in range(80)] for __ in range(50)]
-    # x = 40
-    # y = 25
-    # recieved_code = 0
+    if INPUT_PATH[0] != "t":
+        with open(INPUT_PATH) as f:
+            program = [int(n) for n in f.read().strip().split(",")]
+        icm.feed(program)
+        icm.execute()
+        raw_data = []
+        while icm.status()[0] != 2:
+            raw_data.append(icm.output())
+        data = bytearray(raw_data).decode().strip().split("\n")
+    else:
+        with open(INPUT_PATH) as f:
+            data = [row for row in f.read().strip().split("\n")]
+    
+    for row in data:
+        print(row)
 
-    # first_node = Bfs_node((0,0), [])
-    # icm.set_debug(1)
-    lookup = {(0, 0): []}
-    to_search = [(0, 0)]
-    already_searched = []
-    depth = 0
-    path_to_oxygen = None
-    while True:
-        depth += 1
-        # print(f"searching depth {depth}...")
-        to_search = []
-        for coords in lookup.keys():
-            if coords not in already_searched:
-                if lookup[coords] == WALL:
-                    already_searched.append(coords)
-                else:
-                    to_search.append(coords)
-        # print(f"{len(already_searched)} nodes searched before...")
-        # print(f"{len(to_search)} nodes to process...")
-        for coords in to_search:
-            if path_to_oxygen := search(coords, lookup, data, 2):
-                break
-            already_searched.append(coords)
-        if path_to_oxygen:
-            break
-    
-    # redo entire search but with path_to_oxygen as origin_path
-    lookup = {(0, 0): []}
-    to_search = [(0, 0)]
-    already_searched = []
-    depth = 0
-    while True:
-        depth += 1
-        # print(f"searching depth {depth}...")
-        to_search = []
-        for coords in lookup.keys():
-            if coords not in already_searched:
-                if lookup[coords] == WALL:
-                    already_searched.append(coords)
-                else:
-                    to_search.append(coords)
-        # print(f"{len(already_searched)} nodes searched before...")
-        # print(f"{len(to_search)} nodes to process...")
-        if not len(to_search): # if nothing left to search, the search is complete
-            print(f"answer: {depth - 2}")
-            break
-        for coords in to_search:
-            search(coords, lookup, data, 3, path_to_oxygen)
-            already_searched.append(coords)
-    
+    crossings = []
+    for x,y in itertools.product(range(len(data[0])),range(len(data))):
+        if data[y][x] == ".":
+            continue
+        if x != 0 and data[y][x-1] == ".":
+            continue
+        if y != 0 and data[y-1][x] == ".":
+            continue
+        if x != len(data[0]) - 1 and data[y][x + 1] == ".":
+            continue
+        if y != len(data) - 1 and data[y + 1][x] == ".":
+            continue
+        crossings.append((x,y))
+    print(f"crossings: {crossings}")
+    print(f"answer: {sum(x*y for x,y in crossings)}")
+
+    program[0] = 2
+
+    icm.feed(program)
+    icm.execute()
+
 
 if __name__ == "__main__":
     main()

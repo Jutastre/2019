@@ -8,7 +8,7 @@ all: intcodemachine.so ./../fft/fft.so deploy
 
 intcodemachine.so: intcodemachine.c
     $(CC) $(CFLAGS) intcodemachine.c -o intcodemachine.so
-    
+
 ./../fft/fft.so: ./../fft/fft.c
     $(CC) $(CFLAGS) ./../fft/fft.c -o ./../fft/fft.so
 
@@ -24,7 +24,7 @@ deploy:
     cp intcodemachine.so ./../13
     cp intcodemachine.so ./../15
     cp ./../fft/fft.so ./../16
-    cp intcodemachine.so ./../17
+    cp intcodemachine.so ./../17/intcodemachine/
 
 install:
     pip install --editable .

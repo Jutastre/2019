@@ -466,7 +466,6 @@ PyObject* get_status(PyObject* self, PyObject* args) {
             sprintf(string_buffer, "STATUS_HALTED");
             break;
     }
-
     return Py_BuildValue("[is]", machine->status, string_buffer);
 }
 
