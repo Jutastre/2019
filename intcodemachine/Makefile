@@ -4,10 +4,13 @@ endef
 CC=gcc-14
 CFLAGS= -std=c23 -shared -fPIC -I /usr/include/python3.13 -Wall -Wno-unused-result
 
-all: intcodemachine.so deploy
+all: intcodemachine.so ./../fft/fft.so deploy
 
 intcodemachine.so: intcodemachine.c
     $(CC) $(CFLAGS) intcodemachine.c -o intcodemachine.so
+    
+./../fft/fft.so: ./../fft/fft.c
+    $(CC) $(CFLAGS) ./../fft/fft.c -o ./../fft/fft.so
 
 test:
     python3 test.py
@@ -20,6 +23,8 @@ deploy:
     cp intcodemachine.so ./../11
     cp intcodemachine.so ./../13
     cp intcodemachine.so ./../15
+    cp ./../fft/fft.so ./../16
+    cp intcodemachine.so ./../17
 
 install:
     pip install --editable .
