@@ -44,8 +44,8 @@ def main():
 
 
     for row in map:
-        print("".join(str(num) for num in row))
-        # print("".join(str(num) for num in row).replace("0", " "))
+        # print("".join(str(num) for num in row))
+        print("".join(str(num) for num in row).replace("0", " "))
 
     answer = None
     print(f"answer: {len(magic_set)}")

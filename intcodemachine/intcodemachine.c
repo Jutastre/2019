@@ -1,8 +1,8 @@
 #include <Python.h>
 #include <stdio.h>
 
-#define NUMBER_OF_MACHINES 128
-#define MEMORY_SIZE (256*4*32)
+#define NUMBER_OF_MACHINES 32
+#define MEMORY_SIZE (256*4*16)
 
 enum Status {
     STATUS_NOT_LOADED,
@@ -176,9 +176,9 @@ bool _execute() {
             case 4:
                 left_operand = tape[machine->program_counter + 1];
 
-                // if (mode_vector[0] == 0) {
-                //     left_operand = tape[left_operand];
-                // }
+                if (mode_vector[0] == 1) {
+                    left_operand = machine->program_counter + 1;
+                }
                 if (mode_vector[0] == 2) {
                     left_operand += machine->relative_base;
                 }
@@ -410,7 +410,9 @@ PyObject* read_tape(PyObject* self, PyObject* args) {
 
 PyObject* input(PyObject* self, PyObject* arg) {
     if (machine->status != STATUS_AWAITING_INPUT) {
-        PyErr_SetString(PyExc_ValueError, "Error! Unexpected input");
+        char error_string_buffer[256];
+        sprintf(error_string_buffer, "Error! Unexpected input (Status is %i)", machine->status);
+        PyErr_SetString(PyExc_ValueError, error_string_buffer);
         return NULL;
     }
     long long input_value;
@@ -429,7 +431,9 @@ PyObject* input(PyObject* self, PyObject* arg) {
 
 PyObject* output(PyObject* self, PyObject* args) {
     if (machine->status != STATUS_AWAITING_OUTPUT) {
-        PyErr_SetString(PyExc_ValueError, "Error! Unexpected output");
+        char error_string_buffer[256];
+        sprintf(error_string_buffer, "Error! Unexpected output (Status is %i)", machine->status);
+        PyErr_SetString(PyExc_ValueError, error_string_buffer);
         return NULL;
     }
     // if (machine->debug_level >= 1) printf("Outputting from address %lu\n", machine->io_location);

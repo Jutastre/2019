@@ -1,73 +1,56 @@
 import itertools
 import math
-# import intcodemachine as icm
+import intcodemachine as icm
 
 INPUT_PATH = "input.txt"
-ORIGIN = 13,17
-TARGET = 200
 
-def find_visible(data):
-
-    col,row = ORIGIN
-    tdata = [[c for c in r] for r in data]
-    tdata[row][col] = "*"
-    for tcol,trow in itertools.product(range(len(data[0])),range(len(data))):
-        if tdata[trow][tcol] == '#':
-            xdiff = tcol - col
-            ydiff = trow - row
-            div = math.gcd(xdiff,ydiff)
-            xdir = int(xdiff / div)
-            ydir = int(ydiff / div)
-            if xdiff == 0 and ydiff == 0:
-                continue
-            xdiff += xdir
-            ydiff += ydir
-            while (0 <= col + xdiff < len(data[0])) and (0 <= row + ydiff < len(data)):
-                tdata[row + ydiff][col + xdiff] = "."
-                xdiff += xdir
-                ydiff += ydir
-    visible = "".join("".join(row) for row in tdata).count("#")
-    vmap = [[c for c in r] for r in tdata]
-    return visible, vmap
-
-def zap_from_map(data,zapmap):
-    for col,row in itertools.product(range(len(data[0])),range(len(data))):
-        if zapmap[row][col] == "#":
-            data[row][col] = "."
-
-def get_angles(map, origin):
-    returntuples = []
-    xori, yori = ORIGIN
-    for col,row in itertools.product(range(len(map[0])),range(len(map))):
-        if map[row][col] == "#":
-            angle = -math.atan2((col - xori), (row - yori))
-            returntuples.append(((col,row), angle))
-    return returntuples
-
-def sortfunction(tuppp):
-    return tuppp[1]
 
 def main():
     with open(INPUT_PATH) as f:
-        data = [[char for char in row] for row in f.read().strip().split("\n")]
+        data = [int(number) for number in f.read().strip().split(",")]
 
-    zapped = 0
+    icm.feed(data)
+    # icm.set_debug(3)
+    hull = {}
+    magic_set = set()
+    direction = 0
+    x = 0
+    y = 0
+    icm.execute()
+    hull[(0,0)] = 1
+    while icm.status()[0] != 2:
+        icm.input(hull.get((x,y), 0))
+        output = icm.output()
+        hull[(x,y)] = output
+        magic_set.add((x,y))
+        direction = (direction + (1 if icm.output() else -1)) % 4
+        match direction:
+            case 0:
+                y -= 1
+            case 1:
+                x += 1
+            case 2:
+                y += 1
+            case 3:
+                x -= 1
+        # print((x,y))
+    # print(magic_set)
+    map = [[" " for _ in range(150)] for _ in range(100)]
 
-    while zapped < TARGET:
-        zap, map = find_visible(data)
-        zapped += zap
-        zap_from_map(data,map)
-    for n in range(len(map)):
-        print(f"{map[n]}")
+    for k,v in hull.items():
+        map[k[1] + 50][k[0] + 50] = v
 
-    final_batch = get_angles(map, ORIGIN)
-    sorted_batch = sorted(final_batch, key=sortfunction)
-    for a in sorted_batch:
-        print(a)
-    answer = sorted_batch[(TARGET-1) - (zapped - zap)][0]
+    painted_map = "".join("".join(str(num) for num in row) for row in map)
 
 
-    print(f"answer: {answer}")
+
+    for row in map:
+        # print("".join(str(num) for num in row))
+        print("".join(str(num) for num in row).replace(" ", "..").replace("0", "..").replace("1", "##").replace("..", "  "))
+
+    answer = None
+    print(f"answer: {len(magic_set)}")
+    print(f'answer2: {painted_map.count("1") + painted_map.count("0")}')
 
 
 
