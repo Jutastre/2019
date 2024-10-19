@@ -1,8 +1,147 @@
 import itertools
 import math
-import intcodemachine as icm
+import icm
 
 INPUT_PATH = "input.txt"
+
+def move_forward(state):
+    position, direction, data = state
+    x,y = position
+    match direction:
+        case "^":
+            y -= 1
+        case "v":
+            y += 1
+        case "<":
+            x -= 1
+        case ">":
+            x += 1
+    state[0] = (x,y)
+
+def look_forward(state):
+    position, direction, data = state
+    x,y = position
+    match direction:
+        case "^":
+            y -= 1
+        case "v":
+            y += 1
+        case "<":
+            x -= 1
+        case ">":
+            x += 1
+    if any((x < 0, y < 0, x >= len(data[0]), y >= len(data))):
+        return '.'
+    return data[y][x]
+
+def look_left(state):
+    position, direction, data = state
+    x,y = position
+    match direction:
+        case ">":
+            y -= 1
+        case "<":
+            y += 1
+        case "^":
+            x -= 1
+        case "v":
+            x += 1
+    if any((x < 0, y < 0, x >= len(data[0]), y >= len(data))):
+        return '.'
+    return data[y][x]
+def look_right(state):
+    position, direction, data = state
+    x,y = position
+    match direction:
+        case "<":
+            y -= 1
+        case ">":
+            y += 1
+        case "v":
+            x -= 1
+        case "^":
+            x += 1
+    if any((x < 0, y < 0, x >= len(data[0]), y >= len(data))):
+        return '.'
+    return data[y][x]
+
+def turn_left(state):
+    position, direction, data = state
+    x,y = position
+    match direction:
+        case "<":
+            direction = "v"
+        case ">":
+            direction = "^"
+        case "v":
+            direction = ">"
+        case "^":
+            direction = "<"
+    state[1] = direction
+
+def turn_right(state):
+    position, direction, data = state
+    x,y = position
+    match direction:
+        case "<":
+            direction = "^"
+        case ">":
+            direction = "v"
+        case "v":
+            direction = "<"
+        case "^":
+            direction = ">"
+    state[1] = direction
+
+
+
+def look_left(state):
+    position, direction, data = state
+    x,y = position
+    turn_left(state)
+    result = look_forward(state)
+    turn_right(state)
+    return result
+def look_right(state):
+    position, direction, data = state
+    x,y = position
+    turn_right(state)
+    result = look_forward(state)
+    turn_left(state)
+    return result
+
+# def look_left(state):
+#     position, direction, data = state
+#     x,y = position
+#     match direction:
+#         case ">":
+#             y -= 1
+#         case "<":
+#             y += 1
+#         case "^":
+#             x -= 1
+#         case "v":
+#             x += 1
+#     if any(x < 0, y < 0, x > len(data[0]), y > len(data)):
+#         return '.'
+#     return data[y][x]
+# def look_right(state):
+#     position, direction, data = state
+#     x,y = position
+#     match direction:
+#         case "<":
+#             y -= 1
+#         case ">":
+#             y += 1
+#         case "v":
+#             x -= 1
+#         case "^":
+#             x += 1
+#     if any(x < 0, y < 0, x > len(data[0]), y > len(data)):
+#         return '.'
+#     return data[y][x]
+
+
 
 def main():
     if INPUT_PATH[0] != "t":
@@ -41,6 +180,33 @@ def main():
 
     icm.feed(program)
     icm.execute()
+
+    for y, row in enumerate(data):
+        for x, char in enumerate(row):
+            if char != '#' and char != '.':
+                direction = char
+                position = (x,y)
+    print(f"dir: {direction}, position: {position}")
+    state = [position, direction, data]
+    sequence = []
+    while any((look_forward(state) == '#',look_left(state) == '#',look_right(state) == '#')):
+        if look_forward(state) == '#':
+            #sequence[-1] += 1
+            sequence.append("F")
+            move_forward(state)
+        elif look_left(state) == "#":
+            turn_left(state)
+            # sequence[-1] = str(sequence[-1])
+            sequence.append("L")
+            # sequence.append(0)
+        else:
+            turn_right(state)
+            # sequence[-1] = str(sequence[-1])
+            sequence.append("R")
+            # sequence.append(0)
+            
+    # sequence[-1] = str(sequence[-1])
+    print("".join(sequence) + ",")
 
 
 if __name__ == "__main__":

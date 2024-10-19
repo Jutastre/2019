@@ -4,10 +4,10 @@ endef
 CC=gcc-14
 CFLAGS= -std=c23 -shared -fPIC -I /usr/include/python3.13 -Wall -Wno-unused-result
 
-all: intcodemachine.so ./../fft/fft.so deploy
+all: ./icm/intcodemachine.so ./../fft/fft.so deploy
 
-intcodemachine.so: intcodemachine.c
-    $(CC) $(CFLAGS) intcodemachine.c -o intcodemachine.so
+./icm/intcodemachine.so: ./src/intcodemachine.c
+    $(CC) $(CFLAGS) ./src/intcodemachine.c -o ./icm/intcodemachine.so
 
 ./../fft/fft.so: ./../fft/fft.c
     $(CC) $(CFLAGS) ./../fft/fft.c -o ./../fft/fft.so
@@ -16,15 +16,16 @@ test:
     python3 test.py
 
 deploy:
-    cp intcodemachine.so ./../2
-    cp intcodemachine.so ./../5
-    cp intcodemachine.so ./../7
-    cp intcodemachine.so ./../9
-    cp intcodemachine.so ./../11
-    cp intcodemachine.so ./../13
-    cp intcodemachine.so ./../15
+    cp ./src/__init__.py ./icm/
+    cp ./icm/intcodemachine.so ./../2
+    cp ./icm/intcodemachine.so ./../5
+    cp ./icm/intcodemachine.so ./../7
+    cp ./icm/intcodemachine.so ./../9
+    cp ./icm/intcodemachine.so ./../11
+    cp ./icm/intcodemachine.so ./../13
+    cp ./icm/intcodemachine.so ./../15
     cp ./../fft/fft.so ./../16
-    cp intcodemachine.so ./../17/intcodemachine/
+    cp -r ./icm ./../17/
 
 install:
     pip install --editable .

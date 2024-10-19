@@ -12,8 +12,6 @@ enum Status {
     STATUS_AWAITING_OUTPUT, //
 };
 
-long long* tape;
-size_t machine_selector;
 
 struct Virtual_machine {
     long long* tape;
@@ -27,9 +25,12 @@ struct Virtual_machine {
     size_t debug_level;
 };
 
-struct Virtual_machine machines[NUMBER_OF_MACHINES];
+static long long* tape;
+static size_t machine_selector;
 
-struct Virtual_machine* machine;
+static struct Virtual_machine machines[NUMBER_OF_MACHINES];
+
+static struct Virtual_machine* machine;
 
 
 // enum MODE {
@@ -42,7 +43,7 @@ struct Virtual_machine* machine;
 
 // enum Status status = STATUS_NOT_LOADED;
 
-void _debug_print_tape() {
+static void _debug_print_tape() {
     printf("dbg: [");
     for (size_t idx = 0; idx < machine->tapesize; idx++) {
         printf("%lli, ", tape[idx]);
@@ -50,7 +51,7 @@ void _debug_print_tape() {
     printf("]\n");
 }
 
-bool set_tapesize(size_t target_size) {
+static bool set_tapesize(size_t target_size) {
     if (tape) {
         free(tape);
     }
@@ -66,7 +67,7 @@ bool set_tapesize(size_t target_size) {
 
 
 
-PyObject* select_machine(PyObject* self, PyObject* args) {
+static PyObject* select_machine(PyObject* self, PyObject* args) {
     char error_msg_buffer[256];
     int target;
     PyArg_ParseTuple(args, "i", &target);
@@ -85,7 +86,7 @@ PyObject* select_machine(PyObject* self, PyObject* args) {
     Py_RETURN_NONE;
 }
 
-bool _execute() {
+static bool _execute() {
     long long left_operand;
     long long right_operand;
     long long target;
@@ -325,7 +326,7 @@ bool _execute() {
     }
 }
 
-PyObject* feed_tape(PyObject* self, PyObject* arg) {
+static PyObject* feed_tape(PyObject* self, PyObject* arg) {
     PyObject* tape_list;
     if (!PyArg_Parse(arg, "O", &tape_list)) {
         return NULL;
@@ -354,7 +355,7 @@ PyObject* feed_tape(PyObject* self, PyObject* arg) {
     Py_RETURN_NONE;
 }
 
-PyObject* set_debug(PyObject* self, PyObject* arg) {
+static PyObject* set_debug(PyObject* self, PyObject* arg) {
     int value;
     if (!PyArg_Parse(arg, "i", &value)) {
         return NULL;
@@ -363,7 +364,7 @@ PyObject* set_debug(PyObject* self, PyObject* arg) {
     printf("Debug level of machine #%lu set to %lu\n", machine_selector, machine->debug_level);
     Py_RETURN_NONE;
 }
-PyObject* set_debug_global(PyObject* self, PyObject* arg) {
+static PyObject* set_debug_global(PyObject* self, PyObject* arg) {
     int value;
     if (!PyArg_Parse(arg, "i", &value)) {
         return NULL;
@@ -375,7 +376,7 @@ PyObject* set_debug_global(PyObject* self, PyObject* arg) {
     Py_RETURN_NONE;
 }
 
-PyObject* reset_machine(PyObject* self, PyObject* args) {
+static PyObject* reset_machine(PyObject* self, PyObject* args) {
     if (machine->debug_level >= 1) printf("Resetting machine\n");
     machine->program_counter = 0;
     machine->relative_base = 0;
@@ -383,7 +384,7 @@ PyObject* reset_machine(PyObject* self, PyObject* args) {
     Py_RETURN_NONE;
 }
 
-PyObject* execute(PyObject* self, PyObject* args) {
+static PyObject* execute(PyObject* self, PyObject* args) {
     if (machine->status != STATUS_READY) {
         PyErr_SetString(PyExc_ValueError, "Error! Not ready");
         return NULL;
@@ -398,7 +399,7 @@ PyObject* execute(PyObject* self, PyObject* args) {
     Py_RETURN_NONE;
 }
 
-PyObject* read_tape(PyObject* self, PyObject* args) {
+static PyObject* read_tape(PyObject* self, PyObject* args) {
     PyObject* tape_list = Py_BuildValue("[]");
     for (size_t idx = 0; idx < machine->tapesize; idx++) {
         PyObject* value_to_append = PyLong_FromLongLong(tape[idx]);
@@ -408,7 +409,7 @@ PyObject* read_tape(PyObject* self, PyObject* args) {
     return tape_list;
 }
 
-PyObject* input(PyObject* self, PyObject* arg) {
+static PyObject* input(PyObject* self, PyObject* arg) {
     if (machine->status != STATUS_AWAITING_INPUT) {
         char error_string_buffer[256];
         sprintf(error_string_buffer, "Error! Unexpected input (Status is %i)", machine->status);
@@ -429,7 +430,7 @@ PyObject* input(PyObject* self, PyObject* arg) {
     Py_RETURN_NONE;
 }
 
-PyObject* output(PyObject* self, PyObject* args) {
+static PyObject* output(PyObject* self, PyObject* args) {
     if (machine->status != STATUS_AWAITING_OUTPUT) {
         char error_string_buffer[256];
         sprintf(error_string_buffer, "Error! Unexpected output (Status is %i)", machine->status);
@@ -446,7 +447,7 @@ PyObject* output(PyObject* self, PyObject* args) {
     if (machine->debug_level >= 2) printf("Finished execution\n");
     return output_value;
 }
-PyObject* get_status(PyObject* self, PyObject* args) {
+static PyObject* get_status(PyObject* self, PyObject* args) {
     char string_buffer[256];
 
     switch (machine->status) {
