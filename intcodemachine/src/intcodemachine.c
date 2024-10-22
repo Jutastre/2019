@@ -355,6 +355,21 @@ static PyObject* feed_tape(PyObject* self, PyObject* arg) {
     Py_RETURN_NONE;
 }
 
+static PyObject* poke(PyObject* self, PyObject* args) {
+    int address;
+    int data;
+    if (!PyArg_ParseTuple(args, "ii", &address, &data)) {
+        return NULL;
+    }
+    if (address > machine->tapesize || address < 0) {
+        PyErr_SetString(PyExc_ValueError, "Error! Invalid address");
+        return NULL;
+    }
+    tape[address] = data;
+    if (machine->debug_level >= 1) printf("Poked %i to address %i\n", data, address);
+    Py_RETURN_NONE;
+}
+
 static PyObject* set_debug(PyObject* self, PyObject* arg) {
     int value;
     if (!PyArg_Parse(arg, "i", &value)) {
@@ -364,6 +379,7 @@ static PyObject* set_debug(PyObject* self, PyObject* arg) {
     printf("Debug level of machine #%lu set to %lu\n", machine_selector, machine->debug_level);
     Py_RETURN_NONE;
 }
+
 static PyObject* set_debug_global(PyObject* self, PyObject* arg) {
     int value;
     if (!PyArg_Parse(arg, "i", &value)) {
@@ -477,6 +493,7 @@ static PyMethodDef methods[] = {
     {"set_debug_global", set_debug_global, METH_O, "Sets debug printing on/off for all machines"},
     {"status", get_status, METH_NOARGS, "Reads the machines current status"},
     {"feed", feed_tape, METH_O, "Feeds a program into the machine"},
+    {"poke", poke, METH_VARARGS, "Sets the data at a specified address"},
     {"execute", execute, METH_NOARGS, "Executes the program in the machine"},
     {"read", read_tape, METH_NOARGS, "Reads the memory of the machine"},
     {"output", output, METH_NOARGS, "Retrieves output"},

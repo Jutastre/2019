@@ -2,9 +2,11 @@ import itertools
 import math
 import time
 
-# import intcodemachine as icm
+# WARNING: this program probably takes years to complete; modulotion_p2.py only takes like 10 hours
+
 
 INPUT_PATH = "input.txt"
+
 
 
 def get_element_pattern(element_index):
@@ -25,7 +27,7 @@ def main():
     with open(INPUT_PATH) as f:
         data = [int(char) for char in f.read().strip().split("\n")[0]]
     # real_signal = [a for a in itertools.repeat(data, 10000)]
-    real_signal = data * 10_0
+    real_signal = data * 10_000
     message_offset = int(''.join([str(number) for number in data[:7]]))
     print(f"offset: {message_offset}")
     for phase in range(100):
