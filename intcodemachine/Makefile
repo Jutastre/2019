@@ -26,6 +26,8 @@ deploy:
     cp ./icm/intcodemachine.so ./../15
     cp ./../fft/fft.so ./../16
     cp -r ./icm ./../17/
+    cp -r ./icm ./../19/
+    cp -r ./icm ./../21/
 
 install:
     pip install --editable .

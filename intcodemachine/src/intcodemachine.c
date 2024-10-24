@@ -33,15 +33,6 @@ static struct Virtual_machine machines[NUMBER_OF_MACHINES];
 static struct Virtual_machine* machine;
 
 
-// enum MODE {
-//     MODE_RELATIVE,
-//     MODE_IMMEDIATE
-// };
-
-// enum MODE mode = MODE_RELATIVE;
-
-
-// enum Status status = STATUS_NOT_LOADED;
 
 static void _debug_print_tape() {
     printf("dbg: [");
